@@ -90,6 +90,7 @@ class TransactionAdvancedSearchTest extends Setup
         ]);
 
         $search_criteria = [
+          'acquirerReferenceNumber' => $transaction->acquirerReferenceNumber,
           'billingCompany' => "Braintree",
           'billingCountryName' => "United States of America",
           'billingExtendedAddress' => "Suite 123",

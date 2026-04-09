@@ -7381,7 +7381,7 @@ class TransactionTest extends Setup
         $transaction = Braintree\Transaction::find('ach_txn_ret3');
 
         $this->assertEquals('RJCT', $transaction->achReturnCode);
-        $this->assertEquals('Bank accounts located outside of the U.S. are not supported.', $transaction->achRejectReason);
+        $this->assertEquals('Bank accounts located outside of the U.S. are not supported', $transaction->achRejectReason);
     }
 
     public function test_findTransactionWithPaymentAccountReference()
@@ -7482,5 +7482,21 @@ class TransactionTest extends Setup
             Braintree\Error\Codes::TRANSACTION_PROCESSING_MERCHANT_CATEGORY_CODE_IS_INVALID,
             $result->errors->forKey('transaction')->onAttribute('processingMerchantCategoryCode')[0]->code
         );
+    }
+
+    public function testSaleWithSurchargeAmount()
+    {
+        $result = Braintree\Transaction::sale([
+          'amount' => '100',
+          'creditCard' => [
+              'number' => Braintree\Test\CreditCardNumbers::$visa,
+              'expirationDate' => '05/2009',
+          ],
+          'surchargeAmount' => '3.00'
+        ]);
+
+        $this->assertTrue($result->success);
+        $transaction = $result->transaction;
+        $this->assertEquals('3.00', $transaction->surchargeAmount);
     }
 }

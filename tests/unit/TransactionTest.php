@@ -355,4 +355,13 @@ class TransactionTest extends Setup
         $this->assertEquals(1004, $transaction->processorResponseCode);
         $this->assertEquals(true, $transaction->partiallyAuthorized);
     }
+
+    public function testTransactionWithSurchargeAmount()
+    {
+        $transaction = Braintree\Transaction::factory([
+            'surchargeAmount' => '1.00'
+        ]);
+
+        $this->assertEquals('1.00', $transaction->surchargeAmount);
+    }
 }

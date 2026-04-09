@@ -191,11 +191,25 @@ class TransactionTransferTest extends Setup
         $transactionParams = [
            'type' => 'sale',
            'amount' => '100.00',
-           'merchantAccountId' => 'aft_first_data_wallet_transfer',
+           'merchantAccountId' => 'card_processor_brl_sdwo',
            'creditCard' => [
                'number' => '4111111111111111',
                'expirationDate' => '06/2026',
                'cvv' => '123',
+           ],
+           'descriptor' => [
+             'name' => "companynme12*product1",
+             'phone' => "1232344444",
+             'url' => "example.com",
+           ],
+           'billing' => [
+             'firstName' => "Bob James",
+             'countryCodeAlpha2' => "CA",
+             'extendedAddress' => "",
+             'locality' => "Trois-Rivires",
+             'region' => "QC",
+             'postalCode' => "G8Y 156",
+             'streetAddress' => "2346 Boul Lane",
            ],
            'transfer' => [
                'type' => null,

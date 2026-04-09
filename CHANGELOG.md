@@ -1,5 +1,14 @@
 # Changelog
 
+## 6.33.0
+* Add Local Payment Context support with `LocalPaymentGateway->create()` and `LocalPaymentGateway->find()` methods
+* Add support for MBWAY and CRYPTO payment types
+* Add `acquirerReferenceNumber` to transaction search object
+* Remove merchant create functionality
+* Remove `accountFundingTransaction` from `Transaction` request
+* Add `apiRequestKey` (idempotency) support for `Transaction::sale()`, `Transaction::credit()`, `Transaction::submitForSettlement()`, `Transaction::submitForPartialSettlement()`, `Transaction::void()`, and `Transaction::refund()`
+* Add `surchargeAmount` to transaction object
+
 ## 6.32.0
 * Add JsonSerializable interface to Instance class for proper JSON encoding support
 * Fix PHP 8.5 curl_close() deprecation warning by using version-conditional cleanup
