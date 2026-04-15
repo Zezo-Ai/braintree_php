@@ -1,5 +1,8 @@
 # Changelog
 
+## 6.33.1
+* Fixes syntax error in `Version.php` file
+
 ## 6.33.0
 * Add Local Payment Context support with `LocalPaymentGateway->create()` and `LocalPaymentGateway->find()` methods
 * Add support for MBWAY and CRYPTO payment types
