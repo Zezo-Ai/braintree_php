@@ -42,6 +42,31 @@ pipeline {
       }
     }
 
+    stage("SonarQube") {
+      agent {
+        node {
+          label ""
+          customWorkspace "workspace/${REPO_NAME}-sonar"
+        }
+      }
+
+      steps {
+        script {
+          sh "docker build -t braintree-php ."
+          sh "docker run --rm -e COVERAGE=1 -v \"\$(pwd):\$(pwd)\" -w \"\$(pwd)\" braintree-php /bin/bash -l -c 'curl -sS https://getcomposer.org/installer | php && php composer.phar install && php -d pcov.enabled=1 vendor/bin/phpunit --testsuite unit --coverage-clover coverage/clover.xml'"
+          executeSonarQubeScan()
+        }
+      }
+
+      post {
+        failure {
+          script {
+            FAILED_STAGE = env.STAGE_NAME
+          }
+        }
+      }
+    }
+
     stage("SDK Tests") {
       when {
         branch 'master'

@@ -36,4 +36,29 @@ class ApplePayCardTest extends Setup
         $this->assertEquals(false, $card->isDeviceToken);
         $this->assertEquals("a-merchant-token-identifier", $card->merchantTokenIdentifier);
     }
+
+    public function testVerificationsSortedByCreatedAt()
+    {
+        $card = Braintree\ApplePayCard::factory([
+            'verifications' => [
+                [
+                    'id' => 'verification1',
+                    'status' => 'verified',
+                    'createdAt' => '2023-01-01T10:00:00Z'
+                ],
+                [
+                    'id' => 'verification2',
+                    'status' => 'verified',
+                    'createdAt' => '2023-01-03T10:00:00Z'
+                ],
+                [
+                    'id' => 'verification3',
+                    'status' => 'verified',
+                    'createdAt' => '2023-02-02T10:00:00Z'
+                ]
+            ]
+        ]);
+
+        $this->assertEquals('verification3', $card->verification->id);
+    }
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## 6.34.0
+* Add support for apple pay card verifications
+
 ## 6.33.1
 * Fixes syntax error in `Version.php` file
 

@@ -224,6 +224,206 @@ class PaymentMethodTest extends Setup
         $this->assertSame($customer->id, $applePayCard->customerId);
     }
 
+    public function testCreate_createsApplePayCardWithCardVerification()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => '1.02',
+                'verificationMerchantAccountId' => Test\Helper::nonDefaultMerchantAccountId()
+            ]
+        ]);
+
+        $this->assertTrue($result->success);
+        $this->assertInstanceOf('Braintree\ApplePayCard', $result->paymentMethod);
+
+        $verification = $result->paymentMethod->verification;
+        $this->assertNotNull($verification);
+        $this->assertEquals(Braintree\Result\CreditCardVerification::VERIFIED, $verification->status);
+        $this->assertEquals(Test\Helper::nonDefaultMerchantAccountId(), $verification->merchantAccountId);
+        $this->assertEquals('1.02', $verification->amount);
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenMerchantAccountIdIsInvalid()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationMerchantAccountId' => 'invalid_merchant_account'
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationMerchantAccountId');
+        $this->assertEquals(Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_MERCHANT_ACCOUNT_ID_IS_INVALID, $errors[0]->code);
+    }
+
+    public function testCreate_createsApplePayCardWhenOnlyVerifyCardIsTrue()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true
+            ]
+        ]);
+
+        $this->assertTrue($result->success);
+        $this->assertInstanceOf('Braintree\ApplePayCard', $result->paymentMethod);
+        $verification = $result->paymentMethod->verification;
+        $this->assertNotNull($verification);
+    }
+
+    public function testCreate_createsApplePayCardDoesNotVerifyWhenVerifyCardIsFalse()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => false,
+                'verificationMerchantAccountId' => Test\Helper::nonDefaultMerchantAccountId(),
+                'verificationAmount' => '10.00'
+            ]
+        ]);
+
+        $this->assertTrue($result->success);
+        $this->assertInstanceOf('Braintree\ApplePayCard', $result->paymentMethod);
+        $this->assertFalse(isset($result->paymentMethod->verification));
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenVerificationAmountIsNegative()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => '-1.00'
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationAmount');
+        $this->assertEquals(Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_AMOUNT_CANNOT_BE_NEGATIVE, $errors[0]->code);
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenVerificationAmountFormatIsInvalid()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => '0.001',
+                'verificationMerchantAccountId' => Test\Helper::nonDefaultMerchantAccountId()
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationAmount');
+        $this->assertEquals(Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_AMOUNT_FORMAT_IS_INVALID, $errors[0]->code);
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenVerificationAmountNotSupportedByProcessor()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => '0.01',
+                'verificationMerchantAccountId' => Test\Helper::cardProcessorBRLMerchantAccountId()
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationAmount');
+        $this->assertEquals(Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_AMOUNT_NOT_SUPPORTED_BY_PROCESSOR, $errors[0]->code);
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenVerificationAmountIsTooLarge()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => (string) (pow(2, 31) / 100.0),
+                'verificationMerchantAccountId' => Test\Helper::nonDefaultMerchantAccountId()
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationAmount');
+        $this->assertEquals(Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_AMOUNT_IS_TOO_LARGE, $errors[0]->code);
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenMerchantAccountIsSuspended()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => '10.00',
+                'verificationMerchantAccountId' => Test\Helper::suspendedMerchantAccountId()
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationMerchantAccountId');
+        $hasSuspendedError = false;
+        foreach ($errors as $error) {
+            if ($error->code == Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_MERCHANT_ACCOUNT_IS_SUSPENDED) {
+                $hasSuspendedError = true;
+                break;
+            }
+        }
+        $this->assertTrue($hasSuspendedError, 'Expected APPLE_PAY_OPTIONS_VERIFICATION_MERCHANT_ACCOUNT_IS_SUSPENDED error');
+    }
+
+    public function testCreate_createsApplePayCardErrorsWhenAccountTypeNotSupported()
+    {
+        $customer = Braintree\Customer::create([])->customer;
+
+        $result = Braintree\PaymentMethod::create([
+            'customerId' => $customer->id,
+            'paymentMethodNonce' => Braintree\Test\Nonces::$applePayVisa,
+            'options' => [
+                'verifyCard' => true,
+                'verificationAmount' => '10.00',
+                'verificationMerchantAccountId' => Test\Helper::nonDefaultMerchantAccountId(),
+                'verificationAccountType' => 'credit'
+            ]
+        ]);
+
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('applePay')->forKey('options')->onAttribute('verificationAccountType');
+        $this->assertEquals(Braintree\Error\Codes::APPLE_PAY_OPTIONS_VERIFICATION_ACCOUNT_TYPE_NOT_SUPPORTED, $errors[0]->code);
+    }
+
     public function testCreate_fromFakeGooglePayProxyCardNonce()
     {
         $customer = Braintree\Customer::createNoValidate();

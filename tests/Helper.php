@@ -137,6 +137,11 @@ class Helper
         return 'pinless_debit';
     }
 
+    public static function suspendedMerchantAccountId()
+    {
+        return 'suspended_account';
+    }
+
     public static function suppressDeprecationWarnings()
     {
         set_error_handler("Test\Helper::_errorHandler", E_USER_NOTICE);

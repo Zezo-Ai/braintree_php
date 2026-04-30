@@ -40,6 +40,33 @@ class CustomerTest extends Setup
         }
     }
 
+    public function testCreateSignature_includesOptionsInApplePayCardSignature()
+    {
+        $signature = Braintree\ApplePayGateway::createSignature();
+
+        // Test base fields
+        $this->assertContains('cardholderName', $signature);
+        $this->assertContains('cryptogram', $signature);
+        $this->assertContains('eciIndicator', $signature);
+        $this->assertContains('expirationMonth', $signature);
+        $this->assertContains('expirationYear', $signature);
+        $this->assertContains('networkTransactionId', $signature);
+        $this->assertContains('number', $signature);
+        $this->assertContains('token', $signature);
+
+        foreach ($signature as $key => $value) {
+            // phpcs:ignore
+            if (is_array($value) and array_key_exists('options', $value)) {
+                $this->assertEquals([
+                    'verificationAccountType',
+                    'verificationAmount',
+                    'verificationMerchantAccountId',
+                    'verifyCard',
+                ], $value['options']);
+            }
+        }
+    }
+
     public function testCreateSignature_doesNotIncludeCustomerIdOnCreditCard()
     {
         $signature = Braintree\CustomerGateway::createSignature();
