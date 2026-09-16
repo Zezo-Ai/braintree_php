@@ -630,6 +630,7 @@ class Codes
     const TRANSACTION_SUBSCRIPTION_DOES_NOT_BELONG_TO_CUSTOMER                        = '91529';
     const TRANSACTION_SUBSCRIPTION_ID_IS_INVALID                                      = '91528';
     const TRANSACTION_SUBSCRIPTION_STATUS_MUST_BE_PAST_DUE                            = '91531';
+    const TRANSACTION_SURCHARGE_NOT_ON_ORIGINAL_SALE                                  = '97605';
 
     const TRANSACTION_TAX_AMOUNT_CANNOT_BE_NEGATIVE                                   = '81534';
     const TRANSACTION_TAX_AMOUNT_FORMAT_IS_INVALID                                    = '81535';

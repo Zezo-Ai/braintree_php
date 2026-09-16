@@ -373,4 +373,44 @@ class TransactionTest extends Setup
 
         $this->assertEquals('ZairABg6CIFekPMsnK0cJ2', $transaction->mastercardTransactionLinkId);
     }
+
+    public function testSaleWithShippingAndShippingAddressId()
+    {
+        $transactionGateway = $this->mockTransactionGatewayDoCreate();
+
+        $transactionGateway
+            ->expects($this->once())
+            ->method('_doCreate')
+            ->will($this->returnCallback(function ($path, $params) {
+                $this->assertEquals([
+                    'firstName' => 'Jane',
+                    'lastName' => 'Doe',
+                    'streetAddress' => '123 Main St',
+                    'locality' => 'Austin',
+                    'region' => 'TX',
+                    'postalCode' => '78701',
+                    'countryCodeAlpha2' => 'US',
+                ], $params['transaction']['shipping']);
+
+                $this->assertEquals('shipping-address-id-123', $params['transaction']['shippingAddressId']);
+            }));
+
+        $transactionGateway->sale([
+            'amount' => Braintree\Test\TransactionAmounts::$authorize,
+            'creditCard' => [
+                'number' => Braintree\Test\CreditCardNumbers::$visa,
+                'expirationDate' => '05/2009',
+            ],
+            'shipping' => [
+                'firstName' => 'Jane',
+                'lastName' => 'Doe',
+                'streetAddress' => '123 Main St',
+                'locality' => 'Austin',
+                'region' => 'TX',
+                'postalCode' => '78701',
+                'countryCodeAlpha2' => 'US',
+            ],
+            'shippingAddressId' => 'shipping-address-id-123',
+        ]);
+    }
 }

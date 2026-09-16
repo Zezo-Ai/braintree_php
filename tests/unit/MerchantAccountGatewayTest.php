@@ -96,4 +96,10 @@ class MerchantAccountGatewayTest extends Setup
         $this->assertEquals(1, $result->getTotalItems());
         $this->assertEquals(50, $result->getPageSize());
     }
+
+    public function testFind_throwsIfTraversalId()
+    {
+        $this->expectException('Braintree\Exception\NotFound');
+        Braintree\MerchantAccount::find('../transactions/txn_123/void');
+    }
 }

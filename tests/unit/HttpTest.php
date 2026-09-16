@@ -38,6 +38,11 @@ class HttpTest extends Setup
 
     public function testOlderSSLVersionsError()
     {
+        $curlVersion = curl_version()['version'];
+        if (version_compare($curlVersion, '7.77.0', '>=')) {
+            $this->markTestSkipped("curl $curlVersion ignores CURLOPT_SSLVERSION = SSLv3 rather than rejecting it");
+        }
+
         $this->expectException('Braintree\Exception\Connection');
 
         Braintree\Configuration::environment('sandbox');

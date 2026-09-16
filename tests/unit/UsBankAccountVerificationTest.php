@@ -36,4 +36,19 @@ class UsBankAccountVerificationTest extends Setup
             $verification->usBankAccount->token
         );
     }
+
+    public function testFind_throwsIfTraversalToken()
+    {
+        $this->expectException('Braintree\Exception\NotFound');
+        Braintree\UsBankAccountVerification::find('../transactions/txn_123/void');
+    }
+
+    public function testConfirmMicroTransferAmounts_throwsIfTraversalToken()
+    {
+        $this->expectException('Braintree\Exception\NotFound');
+        Braintree\UsBankAccountVerification::confirmMicroTransferAmounts(
+            '../transactions/txn_123/void',
+            ['0.01', '0.02']
+        );
+    }
 }

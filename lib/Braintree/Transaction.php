@@ -168,6 +168,10 @@ class Transaction extends Base
     const FULL_INFORMATION = 'full_information';
     const TOKEN            = 'token';
 
+    // Ach Type
+    const ACH_TYPE_SAME_DAY = 'same_day';
+    const ACH_TYPE_STANDARD = 'standard';
+
     // Transaction Sources
     const API           = 'api';
     const CONTROL_PANEL = 'control_panel';

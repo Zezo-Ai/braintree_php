@@ -31,6 +31,20 @@ class SepaDirectDebitAccountTest extends Setup
         Braintree\SepaDirectDebitAccount::find('');
     }
 
+    public function testFind_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid SEPA direct debit account token.');
+        Braintree\SepaDirectDebitAccount::find('../transactions/txn_123/void');
+    }
+
+    public function testDelete_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid SEPA direct debit account token.');
+        Braintree\SepaDirectDebitAccount::delete('../transactions/txn_123/void');
+    }
+
     public function testSubscriptions()
     {
         $sepaDirectDebitAccount = Braintree\SepaDirectDebitAccount::factory([

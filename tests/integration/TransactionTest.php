@@ -3304,6 +3304,19 @@ class TransactionTest extends Setup
           'shippingAmount' => '1.00',
           'discountAmount' => '2.00',
           'shipsFromPostalCode' => '12345',
+          'shipping' => [
+               'firstName' => 'Jane',
+               'lastName' => 'Smith',
+               'company' => 'Braintree',
+               'streetAddress' => '456 Oak Ave',
+               'extendedAddress' => '2nd Main St',
+               'locality' => 'New York',
+               'region' => 'NY',
+               'postalCode' => '10001',
+               'countryCodeAlpha2' => 'US',
+               'countryName' => 'United States of America',
+               'internationalPhone' => [ 'countryCode' => '1', 'nationalNumber' => '3121234567', ],
+           ],
           'lineItems' => [[
               'quantity' => '1.0232',
               'name' => 'Name #1',
@@ -3315,6 +3328,78 @@ class TransactionTest extends Setup
         $submitResult = Braintree\Transaction::submitForSettlement($transaction->id, null, $submitForSettlementParams);
         $this->assertEquals(true, $submitResult->success);
         $this->assertEquals(Braintree\Transaction::SUBMITTED_FOR_SETTLEMENT, $submitResult->transaction->status);
+    }
+
+    public function testSubmitForSettlement_withShippingAddressId()
+    {
+        $customer = Braintree\Customer::create([
+            'firstName' => 'Level3',
+            'lastName' => 'Customer'
+        ])->customer;
+
+        $address = Braintree\Address::create([
+            'customerId' => $customer->id,
+            'firstName' => 'Jane',
+            'lastName' => 'Smith',
+            'company' => 'Braintree',
+            'streetAddress' => '456 Oak Ave',
+            'extendedAddress' => '2nd Main St',
+            'locality' => 'New York',
+            'region' => 'NY',
+            'postalCode' => '10001',
+            'countryCodeAlpha2' => 'US',
+        ])->address;
+
+        $transaction = Braintree\Transaction::saleNoValidate([
+            'amount' => '100.00',
+            'creditCard' => [
+                'number' => '5105105105105100',
+                'expirationDate' => '05/12'
+            ],
+            'customerId' => $customer->id,
+        ]);
+
+        $this->assertEquals(Braintree\Transaction::AUTHORIZED, $transaction->status);
+
+        $submitForSettlementParams = [
+          'shippingAmount' => '1.00',
+          'discountAmount' => '2.00',
+          'shipsFromPostalCode' => '12345',
+          'shippingAddressId' => $address->id,
+          'shipping' => [
+            'firstName' => 'Inline',
+            'lastName' => 'Override',
+            'company' => 'Inline Company',
+            'streetAddress' => '999 Conflict St',
+            'extendedAddress' => 'Floor 9',
+            'locality' => 'Chicago',
+            'region' => 'IL',
+            'postalCode' => '60601',
+            'countryCodeAlpha2' => 'US',
+          ],
+          'lineItems' => [[
+              'quantity' => '1.0232',
+              'name' => 'Name #1',
+              'kind' => Braintree\TransactionLineItem::DEBIT,
+              'unitAmount' => '45.1232',
+              'totalAmount' => '45.15',
+          ]]
+        ];
+        $submitResult = Braintree\Transaction::submitForSettlement($transaction->id, null, $submitForSettlementParams);
+        $this->assertEquals(true, $submitResult->success);
+        $this->assertEquals(Braintree\Transaction::SUBMITTED_FOR_SETTLEMENT, $submitResult->transaction->status);
+
+        $shippingDetails = $submitResult->transaction->shippingDetails;
+        $this->assertEquals($address->id, $submitResult->transaction->shippingDetails->id);
+        $this->assertEquals('Jane', $shippingDetails->firstName);
+        $this->assertEquals('Smith', $shippingDetails->lastName);
+        $this->assertEquals('Braintree', $shippingDetails->company);
+        $this->assertEquals('456 Oak Ave', $shippingDetails->streetAddress);
+        $this->assertEquals('2nd Main St', $shippingDetails->extendedAddress);
+        $this->assertEquals('New York', $shippingDetails->locality);
+        $this->assertEquals('NY', $shippingDetails->region);
+        $this->assertEquals('10001', $shippingDetails->postalCode);
+        $this->assertEquals('US', $shippingDetails->countryCodeAlpha2);
     }
 
     public function testSubmitForSettlement_withShippingTaxAmount()
@@ -4508,6 +4593,73 @@ class TransactionTest extends Setup
         $this->assertEquals(
             Test\Helper::nonDefaultMerchantAccountId(),
             $result->transaction->merchantAccountId
+        );
+    }
+
+    public function testRefundWithSurchargeAmountFullRefund()
+    {
+        $transaction = Braintree\Transaction::saleNoValidate([
+            'amount' => '100.00',
+            'creditCard' => [
+                'number' => '5105105105105100',
+                'expirationDate' => '05/12'
+            ],
+            'surchargeAmount' => '3.00',
+            'options' => ['submitForSettlement' => true]
+        ]);
+        Braintree\Test\Transaction::settle($transaction->id);
+        $result = Braintree\Transaction::refund($transaction->id, [
+            'surchargeAmount' => '3.00'
+        ]);
+        $this->assertTrue($result->success);
+        $refund = $result->transaction;
+        $this->assertEquals(Braintree\Transaction::CREDIT, $refund->type);
+        $this->assertEquals($transaction->id, $refund->refundedTransactionId);
+        $this->assertEquals('3.00', $refund->surchargeAmount);
+    }
+
+    public function testRefundWithSurchargeAmountPartialRefund()
+    {
+        $transaction = Braintree\Transaction::saleNoValidate([
+            'amount' => '100.00',
+            'creditCard' => [
+                'number' => '5105105105105100',
+                'expirationDate' => '05/12'
+            ],
+            'surchargeAmount' => '3.00',
+            'options' => ['submitForSettlement' => true]
+        ]);
+        Braintree\Test\Transaction::settle($transaction->id);
+        $result = Braintree\Transaction::refund($transaction->id, [
+            'amount' => '50.00',
+            'surchargeAmount' => '1.50'
+        ]);
+        $this->assertTrue($result->success);
+        $refund = $result->transaction;
+        $this->assertEquals(Braintree\Transaction::CREDIT, $refund->type);
+        $this->assertEquals('50.00', $refund->amount);
+        $this->assertEquals('1.50', $refund->surchargeAmount);
+    }
+
+    public function testRefundWithSurchargeAmountWhenSaleNotSurcharged()
+    {
+        $transaction = Braintree\Transaction::saleNoValidate([
+            'amount' => '100.00',
+            'creditCard' => [
+                'number' => '5105105105105100',
+                'expirationDate' => '05/12'
+            ],
+            'options' => ['submitForSettlement' => true]
+        ]);
+        Braintree\Test\Transaction::settle($transaction->id);
+        $result = Braintree\Transaction::refund($transaction->id, [
+            'surchargeAmount' => '3.00'
+        ]);
+        $this->assertFalse($result->success);
+        $errors = $result->errors->forKey('surchargeTransaction')->onAttribute('surchargeAmount');
+        $this->assertEquals(
+            Braintree\Error\Codes::TRANSACTION_SURCHARGE_NOT_ON_ORIGINAL_SALE,
+            $errors[0]->code
         );
     }
 
@@ -7522,5 +7674,82 @@ class TransactionTest extends Setup
         $this->assertTrue($result->success);
         $transaction = $result->transaction;
         $this->assertEquals('3.00', $transaction->surchargeAmount);
+    }
+
+    public function testCreditWithSurchargeAmount()
+    {
+        $result = Braintree\Transaction::credit([
+          'amount' => '100',
+          'creditCard' => [
+              'number' => Braintree\Test\CreditCardNumbers::$visa,
+              'expirationDate' => '05/2009',
+          ],
+          'surchargeAmount' => '3.00'
+        ]);
+
+        $this->assertTrue($result->success);
+        $creditTransaction = $result->transaction;
+        $this->assertEquals('3.00', $creditTransaction->surchargeAmount);
+    }
+
+    public function testSubmitForSettlement_withShippingDetails()
+    {
+        $transaction = Braintree\Transaction::saleNoValidate([
+        'amount' => '100.00',
+        'creditCard' => [
+            'number' => '5105105105105100',
+            'expirationDate' => '05/12'
+        ]
+        ]);
+
+        $this->assertEquals(Braintree\Transaction::AUTHORIZED, $transaction->status);
+
+        $submitResult = Braintree\Transaction::submitForSettlement($transaction->id, null, [
+        'shipping' => [
+            'firstName'        => 'Jane',
+            'lastName'         => 'Doe',
+            'streetAddress'    => '123 Main St',
+            'locality'         => 'Chicago',
+            'region'           => 'IL',
+            'postalCode'       => '60601',
+            'countryCodeAlpha3' => 'USA',
+            'countryCodeNumeric' => '840',
+        ],
+        ]);
+
+        $this->assertTrue($submitResult->success);
+        $this->assertEquals(Braintree\Transaction::SUBMITTED_FOR_SETTLEMENT, $submitResult->transaction->status);
+        $this->assertEquals('Jane', $submitResult->transaction->shippingDetails->firstName);
+        $this->assertEquals('Doe', $submitResult->transaction->shippingDetails->lastName);
+        $this->assertEquals('123 Main St', $submitResult->transaction->shippingDetails->streetAddress);
+        $this->assertEquals('Chicago', $submitResult->transaction->shippingDetails->locality);
+        $this->assertEquals('IL', $submitResult->transaction->shippingDetails->region);
+        $this->assertEquals('60601', $submitResult->transaction->shippingDetails->postalCode);
+        $this->assertEquals('USA', $submitResult->transaction->shippingDetails->countryCodeAlpha3);
+        $this->assertEquals('840', $submitResult->transaction->shippingDetails->countryCodeNumeric);
+    }
+
+    public function testVoid_rejectsPathTraversalAndDoesNotVoidTheVictimTransaction()
+    {
+        $saleResult = Braintree\Transaction::sale([
+            'amount' => '5.00',
+            'creditCard' => [
+                'number' => '5105105105105100',
+                'expirationDate' => '05/12',
+            ],
+            'options' => ['submitForSettlement' => false],
+        ]);
+        $this->assertTrue($saleResult->success);
+        $victimTransactionId = $saleResult->transaction->id;
+        $traversalId = '../transactions/' . $victimTransactionId;
+
+        try {
+            Braintree\Transaction::void($traversalId);
+            $this->fail('Expected InvalidArgumentException to be thrown');
+        } catch (\InvalidArgumentException $e) {
+        }
+
+        $transaction = Braintree\Transaction::find($victimTransactionId);
+        $this->assertEquals('authorized', $transaction->status);
     }
 }

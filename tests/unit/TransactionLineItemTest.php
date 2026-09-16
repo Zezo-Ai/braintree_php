@@ -43,4 +43,18 @@ class TransactionLineItemTest extends Setup
 
         $this->assertEquals(Braintree\TransactionLineItem::CREDIT, $item->kind);
     }
+
+    public function testFindAll_throwsIfEmptyId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('expected transaction id to be set');
+        Braintree\TransactionLineItem::findAll('');
+    }
+
+    public function testFindAll_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid transaction id.');
+        Braintree\TransactionLineItem::findAll('../customers/cust_123');
+    }
 }

@@ -87,6 +87,27 @@ class CustomerGatewayTest extends Setup
         Braintree\Customer::sale('invalid id!', ['amount' => '10.00']);
     }
 
+    public function testFind_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid customer id.');
+        Braintree\Customer::find('../transactions/txn_123/void');
+    }
+
+    public function testUpdate_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid customer id.');
+        Braintree\Customer::update('../transactions/txn_123/void', []);
+    }
+
+    public function testDelete_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid customer id.');
+        Braintree\Customer::delete('../payment_methods/any/tok_123');
+    }
+
     public function testSearch_throwsIfTermHasNoOperator()
     {
         $this->expectException('InvalidArgumentException');

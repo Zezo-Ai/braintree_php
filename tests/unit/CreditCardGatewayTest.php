@@ -87,6 +87,27 @@ class CreditCardGatewayTest extends Setup
         Braintree\CreditCard::delete('');
     }
 
+    public function testFind_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid credit card token.');
+        Braintree\CreditCard::find('../transactions/txn_123/void');
+    }
+
+    public function testUpdate_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid credit card token.');
+        Braintree\CreditCard::update('../transactions/txn_123/void', []);
+    }
+
+    public function testDelete_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid credit card token.');
+        Braintree\CreditCard::delete('../transactions/txn_123/void');
+    }
+
     public function testBillingAddressSignature()
     {
         $expected = [

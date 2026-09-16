@@ -72,6 +72,27 @@ class SubscriptionGatewayTest extends Setup
         Braintree\Subscription::find('  ');
     }
 
+    public function testFind_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid subscription id.');
+        Braintree\Subscription::find('../transactions/txn_123/void');
+    }
+
+    public function testUpdate_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid subscription id.');
+        Braintree\Subscription::update('../transactions/txn_123/void', []);
+    }
+
+    public function testCancel_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid subscription id.');
+        Braintree\Subscription::cancel('../transactions/txn_123/void');
+    }
+
     public function testCreate_throwsIfInvalidNestedDescriptorKey()
     {
         $this->expectException('InvalidArgumentException');

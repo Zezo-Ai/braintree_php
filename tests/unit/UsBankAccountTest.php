@@ -45,4 +45,10 @@ class UsBankAccountTest extends Setup
         $this->assertEquals(Braintree\Result\UsBankAccountVerification::PENDING, $verification2->status);
         $this->assertEquals(Braintree\Result\UsBankAccountVerification::NETWORK_CHECK, $verification2->verificationMethod);
     }
+
+    public function testFind_throwsIfTraversalToken()
+    {
+        $this->expectException('Braintree\Exception\NotFound');
+        Braintree\UsBankAccount::find('../transactions/txn_123/void');
+    }
 }

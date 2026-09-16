@@ -66,6 +66,20 @@ class PlanGatewayTest extends Setup
         Braintree\Plan::find('  ');
     }
 
+    public function testFind_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid plan id.');
+        Braintree\Plan::find('../transactions/txn_123/void');
+    }
+
+    public function testUpdate_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid plan id.');
+        Braintree\Plan::update('../transactions/txn_123/void', []);
+    }
+
     public function testCreate_throwsIfInvalidNestedAddOnKey()
     {
         $this->expectException('InvalidArgumentException');

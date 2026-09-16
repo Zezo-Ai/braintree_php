@@ -323,6 +323,102 @@ class TransactionAdvancedSearchTest extends Setup
         $this->assertEquals(0, $collection->maximumCount());
     }
 
+    public function test_multipleValueNode_achType()
+    {
+        $transaction = Braintree\Transaction::saleNoValidate([
+            'amount' => '100.00',
+            'merchantAccountId' => Test\Helper::usBankMerchantAccount(),
+            'paymentMethodNonce' => Test\Helper::generateValidUsBankAccountNonce(),
+            'options' => [
+                'submitForSettlement' => true,
+                'storeInVault' => true,
+                'usBankAccount' => [
+                    'achType' => 'standard'
+                ]
+            ]
+        ]);
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($transaction->id),
+            Braintree\TransactionSearch::achType()->is(Braintree\Transaction::ACH_TYPE_STANDARD)
+        ]);
+        $this->assertEquals(1, $collection->maximumCount());
+        $this->assertEquals($transaction->id, $collection->firstItem()->id);
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($transaction->id),
+            Braintree\TransactionSearch::achType()->in(
+                [Braintree\Transaction::ACH_TYPE_SAME_DAY, Braintree\Transaction::ACH_TYPE_STANDARD]
+            )
+        ]);
+        $this->assertEquals(1, $collection->maximumCount());
+        $this->assertEquals($transaction->id, $collection->firstItem()->id);
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($transaction->id),
+            Braintree\TransactionSearch::achType()->in([Braintree\Transaction::ACH_TYPE_SAME_DAY])
+        ]);
+        $this->assertEquals(0, $collection->maximumCount());
+
+        $sameDayTransaction = Braintree\Transaction::find('sameday_ach_sameday_requested');
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($sameDayTransaction->id),
+            Braintree\TransactionSearch::achType()->is(Braintree\Transaction::ACH_TYPE_SAME_DAY)
+        ]);
+        $this->assertEquals(1, $collection->maximumCount());
+        $this->assertEquals($sameDayTransaction->id, $collection->firstItem()->id);
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($sameDayTransaction->id),
+            Braintree\TransactionSearch::achType()->is(Braintree\Transaction::ACH_TYPE_STANDARD)
+        ]);
+        $this->assertEquals(0, $collection->maximumCount());
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($sameDayTransaction->id),
+            Braintree\TransactionSearch::achType()->in(
+                [Braintree\Transaction::ACH_TYPE_SAME_DAY, Braintree\Transaction::ACH_TYPE_STANDARD]
+            )
+        ]);
+        $this->assertEquals(1, $collection->maximumCount());
+        $this->assertEquals($sameDayTransaction->id, $collection->firstItem()->id);
+
+        $divergentTransaction = Braintree\Transaction::find('standard_ach_sameday_requested');
+        $this->assertEquals(Braintree\Transaction::ACH_TYPE_STANDARD, $divergentTransaction->achType);
+        $this->assertEquals(Braintree\Transaction::ACH_TYPE_SAME_DAY, $divergentTransaction->requestedAchType);
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($divergentTransaction->id),
+            Braintree\TransactionSearch::achType()->is(Braintree\Transaction::ACH_TYPE_STANDARD)
+        ]);
+        $this->assertEquals(1, $collection->maximumCount());
+        $this->assertEquals($divergentTransaction->id, $collection->firstItem()->id);
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($divergentTransaction->id),
+            Braintree\TransactionSearch::achType()->is(Braintree\Transaction::ACH_TYPE_SAME_DAY)
+        ]);
+        $this->assertEquals(0, $collection->maximumCount());
+
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::id()->is($divergentTransaction->id),
+            Braintree\TransactionSearch::achType()->in(
+                [Braintree\Transaction::ACH_TYPE_SAME_DAY, Braintree\Transaction::ACH_TYPE_STANDARD]
+            )
+        ]);
+        $this->assertEquals(1, $collection->maximumCount());
+        $this->assertEquals($divergentTransaction->id, $collection->firstItem()->id);
+    }
+
+    public function test_multipleValueNode_achType_allowedValues()
+    {
+        $this->expectException('InvalidArgumentException', 'Invalid argument(s) for ach_type: noSuchAchType');
+        $collection = Braintree\Transaction::search([
+            Braintree\TransactionSearch::achType()->is('noSuchAchType')
+        ]);
+    }
+
     public function test_multipleValueNode_paymentInstrumentType_is_creditCard()
     {
         $transaction = Braintree\Transaction::saleNoValidate([

@@ -85,6 +85,41 @@ class TransactionGatewayTest extends Setup
         Braintree\Transaction::refund('');
     }
 
+    public function testFind_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid transaction id.');
+        Braintree\Transaction::find('../customers/cust_123');
+    }
+
+    public function testVoid_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid transaction id.');
+        Braintree\Transaction::void('../transactions/other_txn_id');
+    }
+
+    public function testSubmitForSettlement_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid transaction id.');
+        Braintree\Transaction::submitForSettlement('../transactions/other_txn_id');
+    }
+
+    public function testRefund_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid transaction id.');
+        Braintree\Transaction::refund('../customers/cust_123');
+    }
+
+    public function testCloneTransaction_throwsIfTraversalId()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid transaction id.');
+        Braintree\Transaction::cloneTransaction('../customers/cust_123', ['amount' => '10.00']);
+    }
+
     public function testCloneSignature()
     {
         $expected = ['amount', 'channel', ['options' => ['submitForSettlement']]];
@@ -101,6 +136,7 @@ class TransactionGatewayTest extends Setup
         $this->assertContains('merchantAccountId', $sig);
         $this->assertContains('orderId', $sig);
         $this->assertContains('channel', $sig);
+        $this->assertContains('shippingAddressId', $sig);
     }
 
     public function testSaleSignature_containsSubmitForSettlement()
@@ -218,6 +254,12 @@ class TransactionGatewayTest extends Setup
         $this->assertInstanceOf('Braintree\Result\Error', $result);
     }
 
+    public function testRefundSignature_containsSurchargeAmount()
+    {
+        $sig = Braintree\TransactionGateway::refundSignature();
+        $this->assertContains('surchargeAmount', $sig);
+    }
+
     public function testAdjustAuthorization_throwsIfEmptyId()
     {
         $this->expectException('InvalidArgumentException');
@@ -251,5 +293,47 @@ class TransactionGatewayTest extends Setup
         $this->expectException('Braintree\Exception\RequestTimeout');
         $gateway = $this->gatewayWithMock('post', ['noSearchResults' => true]);
         $gateway->search([Braintree\TransactionSearch::id()->is('txn_123')]);
+    }
+
+    public function testSubmitForSettlement_withShippingAddressIdAndDetails_returnsSuccessfulResult()
+    {
+        $gateway = Helper::integrationMerchantGateway()->transaction();
+        $mock = $this->createMock('\Braintree\Http');
+
+        $mock->expects($this->once())
+        ->method('put')
+        ->willReturnCallback(function ($path, $params) {
+            $this->assertEquals('address_123', $params['transaction']['shippingAddressId']);
+            $this->assertEquals([
+                'firstName' => 'Jane',
+                'lastName' => 'Smith',
+                'streetAddress' => '456 Oak Ave',
+                'locality' => 'New York',
+                'region' => 'NY',
+                'postalCode' => '10001',
+                'countryCodeAlpha2' => 'US',
+            ], $params['transaction']['shipping']);
+
+            return $this->transactionResponse();
+        });
+
+        $prop = new \ReflectionProperty('Braintree\TransactionGateway', '_http');
+        $prop->setAccessible(true);
+        $prop->setValue($gateway, $mock);
+
+        $result = $gateway->submitForSettlement('txn_123', null, [
+        'shippingAddressId' => 'address_123',
+        'shipping' => [
+            'firstName' => 'Jane',
+            'lastName' => 'Smith',
+            'streetAddress' => '456 Oak Ave',
+            'locality' => 'New York',
+            'region' => 'NY',
+            'postalCode' => '10001',
+            'countryCodeAlpha2' => 'US',
+        ],
+        ]);
+
+        $this->assertInstanceOf('Braintree\Result\Successful', $result);
     }
 }

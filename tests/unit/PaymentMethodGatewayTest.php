@@ -86,6 +86,27 @@ class PaymentMethodGatewayTest extends Setup
         Braintree\PaymentMethod::delete('valid-token', ['invalidKey' => 'foo']);
     }
 
+    public function testFind_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid payment method token.');
+        Braintree\PaymentMethod::find('../transactions/txn_123/void');
+    }
+
+    public function testUpdate_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid payment method token.');
+        Braintree\PaymentMethod::update('../transactions/txn_123/void', []);
+    }
+
+    public function testDelete_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid payment method token.');
+        Braintree\PaymentMethod::delete('../transactions/txn_123/void');
+    }
+
     public function testCreate_returnsSuccessfulResult()
     {
         $gateway = $this->gatewayWithMock('post', $this->creditCardResponse());

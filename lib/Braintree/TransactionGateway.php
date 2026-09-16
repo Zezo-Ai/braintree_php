@@ -44,6 +44,7 @@ class TransactionGateway
     {
         Util::verifyKeys(self::cloneSignature(), $attribs);
         $this->_checkForDeprecatedAttributes($attribs);
+        $this->_validateId($transactionId);
         return $this->_doCreate('/transactions/' . $transactionId . '/clone', ['transactionClone' => $attribs]);
     }
 
@@ -574,6 +575,13 @@ class TransactionGateway
             ],
             'discountAmount',
             'purchaseOrderNumber',
+            ['shipping' =>
+                [
+                    'company', 'countryCodeAlpha2', 'countryCodeAlpha3', 'countryCodeNumeric', 'countryName',
+                    'extendedAddress', 'firstName', 'lastName', 'locality', 'phoneNumber', ['internationalPhone' => ['countryCode', 'nationalNumber']],
+                    'postalCode', 'region', 'streetAddress'],
+            ],
+            'shippingAddressId',
             'shippingAmount',
             'shippingTaxAmount',
             'shipsFromPostalCode',
@@ -616,7 +624,8 @@ class TransactionGateway
             'amount',
             'apiRequestKey',
             'merchantAccountId',
-            'orderId'
+            'orderId',
+            'surchargeAmount'
         ];
     }
 
@@ -949,6 +958,11 @@ class TransactionGateway
         if (empty($id)) {
             throw new InvalidArgumentException(
                 'expected transaction id to be set'
+            );
+        }
+        if (Util::isInvalidPathSegment($id)) {
+            throw new InvalidArgumentException(
+                $id . ' is an invalid transaction id.'
             );
         }
     }

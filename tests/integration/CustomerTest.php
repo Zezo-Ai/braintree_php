@@ -2611,4 +2611,50 @@ class CustomerTest extends Setup
         }
         $this->assertTrue($hasSuspendedError, 'Expected APPLE_PAY_OPTIONS_VERIFICATION_MERCHANT_ACCOUNT_IS_SUSPENDED error');
     }
+
+    public function testUpdate_rejectsPathTraversalAndDoesNotVoidTheVictimTransaction()
+    {
+        $saleResult = Braintree\Transaction::sale([
+            'amount' => '5.00',
+            'creditCard' => [
+                'number' => '4111111111111111',
+                'expirationDate' => '05/2030',
+            ],
+            'options' => ['submitForSettlement' => false],
+        ]);
+        $this->assertTrue($saleResult->success);
+        $transactionId = $saleResult->transaction->id;
+        $traversalId = '../transactions/' . $transactionId . '/void';
+
+        try {
+            Braintree\Customer::update($traversalId, ['firstName' => 'HackerOne']);
+            $this->fail('Expected InvalidArgumentException to be thrown');
+        } catch (\InvalidArgumentException $e) {
+        }
+
+        $transaction = Braintree\Transaction::find($transactionId);
+        $this->assertEquals('authorized', $transaction->status);
+    }
+
+    public function testDelete_rejectsPathTraversalAndDoesNotDeleteTheVictimPaymentMethod()
+    {
+        $customer = Braintree\Customer::create()->customer;
+        $creditCardResult = Braintree\CreditCard::create([
+            'customerId' => $customer->id,
+            'number' => '4111111111111111',
+            'expirationDate' => '05/2030',
+        ]);
+        $this->assertTrue($creditCardResult->success);
+        $token = $creditCardResult->creditCard->token;
+        $traversalId = '../payment_methods/any/' . $token;
+
+        try {
+            Braintree\Customer::delete($traversalId);
+            $this->fail('Expected InvalidArgumentException to be thrown');
+        } catch (\InvalidArgumentException $e) {
+        }
+
+        $creditCard = Braintree\CreditCard::find($token);
+        $this->assertEquals($token, $creditCard->token);
+    }
 }

@@ -73,6 +73,27 @@ class PayPalAccountGatewayTest extends Setup
         Braintree\PayPalAccount::delete('invalid token!');
     }
 
+    public function testFind_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid paypal account token.');
+        Braintree\PayPalAccount::find('../transactions/txn_123/void');
+    }
+
+    public function testUpdate_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid paypal account token.');
+        Braintree\PayPalAccount::update('../transactions/txn_123/void', []);
+    }
+
+    public function testDelete_throwsIfTraversalToken()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('is an invalid paypal account token.');
+        Braintree\PayPalAccount::delete('../transactions/txn_123/void');
+    }
+
     public function testUpdateSignature()
     {
         $expected = ['token', ['options' => ['makeDefault']]];

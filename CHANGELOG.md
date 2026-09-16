@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.38.0
+* Fix path traversal vulnerability in `CreditCard`, `Customer`, `MerchantAccount`, `PayPalAccount`, `PaymentMethod`, `PaymentMethodNonce`, `Plan`, `SepaDirectDebitAccount`, `Subscription`, `Testing`, `Transaction`, `TransactionLineItem`, `UsBankAccount`, and `UsBankAccountVerification` gateways by validating that IDs used in request paths do not contain path separators or relative-path segments
+* Add `shipping`(including `company`, `countryCodeAlpha2`, `countryCodeAlpha3`, `countryCodeNumeric`, `countryName`, `extendedAddress`, `firstName`, `lastName`, `locality`, `phoneNumber`, `internationalPhone`, `postalCode`, `region`, `streetAddress`) and `shippingAddressId` to `Transaction::submitForSettlement()`
+* Add `ach_type` to transaction search
+* Add `surchargeAmount` to `Transaction::refund()`
+
 ## 6.37.0
 * Fix path traversal vulnerability in `Dispute` and `Address` gateways by validating that IDs used in request paths do not contain path separators or relative-path segments
 * Add `PAYPAL_ACCOUNT_EMAIL_FORMAT_IS_INVALID (92963)` and `PAYPAL_ACCOUNT_EMAIL_IS_TOO_LONG (92964)` validation error codes

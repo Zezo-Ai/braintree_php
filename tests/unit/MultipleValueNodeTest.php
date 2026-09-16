@@ -37,4 +37,41 @@ class MultipleValueNodeTest extends Setup
         $node->in(['anything', 'goes']);
         $this->assertEquals(['anything', 'goes'], $node->toParam());
     }
+
+    public function testAchType_nodeName()
+    {
+        $node = Braintree\TransactionSearch::achType();
+        $this->assertEquals('ach_type', $node->name);
+    }
+
+    public function testAchType_is_sameDay()
+    {
+        $node = Braintree\TransactionSearch::achType();
+        $node->is(Braintree\Transaction::ACH_TYPE_SAME_DAY);
+        $this->assertEquals(['same_day'], $node->toParam());
+    }
+
+    public function testAchType_is_standard()
+    {
+        $node = Braintree\TransactionSearch::achType();
+        $node->is(Braintree\Transaction::ACH_TYPE_STANDARD);
+        $this->assertEquals(['standard'], $node->toParam());
+    }
+
+    public function testAchType_in_bothValues()
+    {
+        $node = Braintree\TransactionSearch::achType();
+        $node->in([
+            Braintree\Transaction::ACH_TYPE_SAME_DAY,
+            Braintree\Transaction::ACH_TYPE_STANDARD
+        ]);
+        $this->assertEquals(['same_day', 'standard'], $node->toParam());
+    }
+
+    public function testAchType_allowedValues()
+    {
+        $this->expectException('InvalidArgumentException');
+        $node = Braintree\TransactionSearch::achType();
+        $node->is('noSuchAchType');
+    }
 }

@@ -80,4 +80,16 @@ class PaymentMethodNonceGatewayTest extends Setup
         $prop->setValue($gateway, $mock);
         $gateway->find('missing-nonce');
     }
+
+    public function testCreate_throwsIfTraversalToken()
+    {
+        $this->expectException('Braintree\Exception\NotFound');
+        Braintree\PaymentMethodNonce::create('../transactions/txn_123/void');
+    }
+
+    public function testFind_throwsIfTraversalNonce()
+    {
+        $this->expectException('Braintree\Exception\NotFound');
+        Braintree\PaymentMethodNonce::find('../transactions/txn_123/void');
+    }
 }
